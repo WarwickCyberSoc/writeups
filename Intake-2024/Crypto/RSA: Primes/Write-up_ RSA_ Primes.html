@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Write-up: RSA: Primes</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h1 id="write-up-rsa-primes">Write-up: RSA: Primes</h1>
+<p>Yay, more crypto :D</p>
+<p>After opening the zip, we get a single file:</p>
+<pre class=" language-bash"><code class="prism  language-bash">$ <span class="token function">ls</span> -la
+-rw-rw-r-- 1 neowo neowo  191 Sep 27 15:36 pubkey.pem
+</code></pre>
+<p>And a cipher: <code>YxM055BCDnkM/WH81o0XfxLHBVvOzcEXDj6fe2WNiUcvsNTSlov/aILkAuBAy1UWTayuoRO8jWrWqLZqMLiHoyd9lezwBQOM</code></p>
+<p>The challenge’s title tells us the algorithm used was RSA, we have the public key, and now we need the private key! But how do? :(</p>
+<h1 id="a-quick-explanation-of-rsa">A quick explanation of RSA</h1>
+<p>RSA is an asymmetrical encryption algorithm (trust me, it’s easier than it seems).</p>
+<p><strong>Why asymmetrical?</strong><br>
+Imagine you’re trying to send some data to your friend. You would like to make sure that only yourself and your friend can read the data, so you use encryption.<br>
+Symmetrical encryption algorithm work like a lock: you put a lock on your data, and using the unique key can both open (decrypt) and close (encrypt) the lock. Once the lock is closed, its content (the data) is unreadable to an external eye. Assuming perfect encryption, the only way to open the lock is to know the key (or try every possible combination, which can take billions of millions of tries). Sounds fancy? But it doesn’t work when on a network. Your lock is perfect and the data is unreadable, but your friend doesn’t know the key! So you would need to share the key with them, but any external individual on the network can see you sharing the key. The algorithm is fine, the issue therefore lays in how to share the key with your peer and ensure that them and only them can receive the key.</p>
+<p>So what do? Well, we use asymmetrical encryption algorithms! Those work by generating a pair of keys instead of a single key.<br>
+This time, instead of having a single lock for both encryption and decryption, you will have a unique key for encryption and its pair key both decryption. The one used for encryption is called “public key”, and the one used for decryption is a “private key”. It follows that your friend can share their public key freely on the internet, you will receive it, but it doesn’t matter who else does as that key can only be used for encryption. You can now use that key to close the lock on your data (encrypt), send it, and only your friend who knows the private key will be able to open the lock (decrypt it)! As long as the private key remains private, assuming perfect encryption, an attacker will not be able to read the data or open the lock.</p>
+<p><strong>Now how does RSA work?</strong></p>
+<p>Well it follows these steps:</p>
+<p><img src="https://www.researchgate.net/profile/Shihab-Shawkat/publication/328828460/figure/fig12/AS:694959833366538@1542702744619/Figure-213-The-RSA-Algorithm_W640.jpg" alt="Step by step key generation, encryption and decryption following RSA"></p>
+<p>Pretty cool huh? The whole premise of RSA resides in a very simple fact:<br>
+Multiplying two integers <code>p*q=n</code> is very easy for a computer, but factorizing that product is very hard.<br>
+Furthermore, by ensuring that both <code>p</code> and <code>q</code> are primes, we know that <code>n</code> will have a unique integer factorizing solution (aka there will be a single pair <code>(p,q)</code> such that <code>p*q=n</code></p>
+<p>With big primes, it gets exponentially harder to factorize n.</p>
+<h1 id="flaw">Flaw?</h1>
+<p>The challenge’s title hints to us that there’s something wrong with the primes.</p>
+<p>We use the RsaCtfTool, available on github:<br>
+<a href="https://github.com/RsaCtfTool/RsaCtfTool">RsaCtfTool</a>,</p>
+<p>From which we can:</p>
+<pre class=" language-bash"><code class="prism  language-bash">$ python3 RsaCtfTool.py --dumpkey --public pubkey.pem 
+private argument is not set, the private key will not be displayed, even <span class="token keyword">if</span> recovered.
+<span class="token punctuation">[</span><span class="token string">'pubkey.pem'</span><span class="token punctuation">]</span>
+Details <span class="token keyword">for</span> pubkey.pem:
+n: 101275698317249343122448595496210998756554971585207628863575099522765893004385037141284938912498830190371729638439414839307538793230702339248933840573417397004415170718138121
+e: 65537
+</code></pre>
+<p>An experienced user will notice that n isn’t that big, weird.<br>
+We can deduce that the input primes are small!</p>
+<p>From here, it’s time to ex-ex-ex-explooooit</p>
+<h1 id="exploit">Exploit</h1>
+<p>We have a very basic solution (please don’t try to factorize it yourself):<br>
+Use ✨<a href="https://factordb.com">factordb</a>✨</p>
+<p>And wooow</p>
+<p><img src="https://cdn.discordapp.com/attachments/1270664882865442816/1293994718690279535/image.png?ex=670965fe&amp;is=6708147e&amp;hm=cfcd94fe978f320c464b5f9d51926724fb6ba08025942a22bc6b678a5111c7e7&amp;" alt="Primes :D"></p>
+<p>Now that we have <code>p</code> and <code>q</code>, we can reconstruct the private key and decipher the message.</p>
+<p>We convert our cipher to an <code>int</code> format:</p>
+<p><code>95719788901704825705765295176270645491358687146207915267901398776198873132751367890722301082465220611788405772046955814716692665756172556415036572377530190652837229417005964</code></p>
+<p>And now:</p>
+<pre class=" language-bash"><code class="prism  language-bash">$ python3 RsaCtfTool.py --publickey pubkey.pem --decrypt 95719788901704825705765295176270645491358687146207915267901398776198873132751367890722301082465220611788405772046955814716692665756172556415036572377530190652837229417005964
+private argument is not set, the private key will not be displayed, even <span class="token keyword">if</span> recovered.
+<span class="token punctuation">[</span><span class="token string">'pubkey.pem'</span><span class="token punctuation">]</span>
+
+<span class="token punctuation">[</span>*<span class="token punctuation">]</span> Testing key pubkey.pem.
+attack initialized<span class="token punctuation">..</span>.
+attack initialized<span class="token punctuation">..</span>.
+<span class="token punctuation">[</span>*<span class="token punctuation">]</span> Performing system_primes_gcd attack on pubkey.pem.
+100%<span class="token operator">|</span>█████████████████████████████████████████████████████████████████████████████████<span class="token operator">|</span> 7007/7007 <span class="token punctuation">[</span>00:00<span class="token operator">&lt;</span>00:00, 745358.56it/s<span class="token punctuation">]</span>
+<span class="token punctuation">[</span>+<span class="token punctuation">]</span> Time elapsed: 0.0398 sec.
+<span class="token punctuation">[</span>*<span class="token punctuation">]</span> Performing mersenne_primes attack on pubkey.pem.
+ 25%<span class="token operator">|</span>█████████████████████▋                                                               <span class="token operator">|</span> 13/51 <span class="token punctuation">[</span>00:00<span class="token operator">&lt;</span>00:00, 304614.26it/s<span class="token punctuation">]</span>
+<span class="token punctuation">[</span>+<span class="token punctuation">]</span> Time elapsed: 0.0005 sec.
+<span class="token punctuation">[</span>*<span class="token punctuation">]</span> Performing pastctfprimes attack on pubkey.pem.
+<span class="token punctuation">[</span>+<span class="token punctuation">]</span> loading prime list <span class="token function">file</span> data/pastctfprimes.txt<span class="token punctuation">..</span>.
+100%<span class="token operator">|</span>███████████████████████████████████████████████████████████████████████████████████<span class="token operator">|</span> 121/121 <span class="token punctuation">[</span>00:00<span class="token operator">&lt;</span>00:00, 927807.65it/s<span class="token punctuation">]</span>
+<span class="token punctuation">[</span>+<span class="token punctuation">]</span> loading prime list <span class="token function">file</span> data/visa_emv.txt<span class="token punctuation">..</span>.
+100%<span class="token operator">|</span>████████████████████████████████████████████████████████████████████████████████████████<span class="token operator">|</span> 2/2 <span class="token punctuation">[</span>00:00<span class="token operator">&lt;</span>00:00, 79137.81it/s<span class="token punctuation">]</span>
+<span class="token punctuation">[</span>+<span class="token punctuation">]</span> loading prime list <span class="token function">file</span> data/ti_rsa_signing_keys.txt<span class="token punctuation">..</span>.
+100%<span class="token operator">|</span>█████████████████████████████████████████████████████████████████████████████████████<span class="token operator">|</span> 34/34 <span class="token punctuation">[</span>00:00<span class="token operator">&lt;</span>00:00, 695640.66it/s<span class="token punctuation">]</span>
+<span class="token punctuation">[</span>+<span class="token punctuation">]</span> Time elapsed: 0.0018 sec.
+<span class="token punctuation">[</span>*<span class="token punctuation">]</span> Performing fibonacci_gcd attack on pubkey.pem.
+100%<span class="token operator">|</span>█████████████████████████████████████████████████████████████████████████████████<span class="token operator">|</span> 9999/9999 <span class="token punctuation">[</span>00:00<span class="token operator">&lt;</span>00:00, 144549.92it/s<span class="token punctuation">]</span>
+<span class="token punctuation">[</span>+<span class="token punctuation">]</span> Time elapsed: 0.0695 sec.
+<span class="token punctuation">[</span>*<span class="token punctuation">]</span> Performing smallq attack on pubkey.pem.
+<span class="token punctuation">[</span>+<span class="token punctuation">]</span> Time elapsed: 0.2861 sec.
+<span class="token punctuation">[</span>*<span class="token punctuation">]</span> Performing lucas_gcd attack on pubkey.pem.
+100%<span class="token operator">|</span>█████████████████████████████████████████████████████████████████████████████████<span class="token operator">|</span> 9999/9999 <span class="token punctuation">[</span>00:00<span class="token operator">&lt;</span>00:00, 162713.23it/s<span class="token punctuation">]</span>
+<span class="token punctuation">[</span>+<span class="token punctuation">]</span> Time elapsed: 0.0619 sec.
+<span class="token punctuation">[</span>*<span class="token punctuation">]</span> Performing factordb attack on pubkey.pem.
+<span class="token punctuation">[</span>*<span class="token punctuation">]</span> Attack success with factordb method <span class="token operator">!</span>
+<span class="token punctuation">[</span>+<span class="token punctuation">]</span> Total <span class="token function">time</span> elapsed min,max,avg: 0.0005/0.2861/0.0766 sec.
+
+Results <span class="token keyword">for</span> pubkey.pem:
+
+Decrypted data <span class="token keyword">:</span>
+HEX <span class="token keyword">:</span> 0x0002c1c91c0bdda8ff3818c931bd35a23c0f1564011ca32f90bbf19c501e4f1f00496e74616b6532347b42455f284052656675215f774954485f354d406c6c5f7037496d4573217d
+INT <span class="token punctuation">(</span>big endian<span class="token punctuation">)</span> <span class="token keyword">:</span> 10404719823297572086251016212021044622273469792252667399041607561274203647100092678887835618843952598783471793780218517464720824656465547998895536933695764791090151104893
+INT <span class="token punctuation">(</span>little endian<span class="token punctuation">)</span> <span class="token keyword">:</span> 120893037687015537916888648522186785322132984375523940618919293104915377062122868278390351737679136580813474497213186117480797425575547679580174663874020601028253116981641728
+utf-16 <span class="token keyword">:</span> Ȁ직ଜ꣝㣿줘봱ꈵ༼搕ᰁ⾣뮐鳱Ṑ὏䤀瑮歡㉥笴䕂⡟剀晥ⅵ睟呉彈䴵汀彬㝰浉獅紡
+STR <span class="token keyword">:</span> b<span class="token string">'\x00\x02\xc1\xc9\x1c\x0b\xdd\xa8\xff8\x18\xc91\xbd5\xa2&lt;\x0f\x15d\x01\x1c\xa3/\x90\xbb\xf1\x9cP\x1eO\x1f\x00Intake24{BE_(@Refu!_wITH_5M@ll_p7ImEs!}'</span>
+
+PKCS<span class="token comment">#1.5 padding decoded!</span>
+HEX <span class="token keyword">:</span> 0x00496e74616b6532347b42455f284052656675215f774954485f354d406c6c5f7037496d4573217d
+INT <span class="token punctuation">(</span>big endian<span class="token punctuation">)</span> <span class="token keyword">:</span> 2393320521445260043900152343482097827754771662171950322138051811578524591165399694695948558717
+INT <span class="token punctuation">(</span>little endian<span class="token punctuation">)</span> <span class="token keyword">:</span> 1044052650602451218010412249961467926624694396163635744679032495111926056092627750919782605408512
+utf-8 <span class="token keyword">:</span> Intake24<span class="token punctuation">{</span>BE_<span class="token punctuation">(</span>@Refu<span class="token operator">!</span>_wITH_5M@ll_p7ImEs<span class="token operator">!</span><span class="token punctuation">}</span>
+utf-16 <span class="token keyword">:</span> 䤀瑮歡㉥笴䕂⡟剀晥ⅵ睟呉彈䴵汀彬㝰浉獅紡
+STR <span class="token keyword">:</span> b<span class="token string">'\x00Intake24{BE_(@Refu!_wITH_5M@ll_p7ImEs!}'</span>
+</code></pre>
+<p>Flagged! :D</p>
+</div>
+</body>
+
+</html>

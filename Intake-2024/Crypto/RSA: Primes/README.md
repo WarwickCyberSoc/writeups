@@ -1,0 +1,1 @@
+See [https://warwickcybersoc.github.io/writeups/Intake-2024/Crypto/RSA:%20Primes/Write-up_%20RSA_%20Primes.html](https://warwickcybersoc.github.io/writeups/Intake-2024/Crypto/RSA:%20Primes/Write-up_%20RSA_%20Primes.html)

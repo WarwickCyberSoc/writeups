@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Write-up: Game’s Meta</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h1 id="write-up-games-meta">Write-up: Game’s Meta</h1>
+<p><em>MILFS: Man I Love Fuckery Steg</em></p>
+<p>Upon extraction, we get a single  .jpg file</p>
+<pre class=" language-bash"><code class="prism  language-bash">$ <span class="token function">ls</span> -la
+-rw-rw-r-- 1 neowo neowo 24968 Sep 27 13:07 meta.jpg
+</code></pre>
+<p>“Meta” reminds us of metadata (at least it does for me). So, two options now:</p>
+<h1 id="be-smart-and-use-exiftool">Be smart and use exiftool</h1>
+<p>Exiftool is a command line tool that extracts all metadata from a file and displays it nicely for us:</p>
+<pre class=" language-bash"><code class="prism  language-bash">$ exiftool meta.jpg 
+ExifTool Version Number         <span class="token keyword">:</span> 12.40
+File Name                       <span class="token keyword">:</span> meta.jpg
+Directory                       <span class="token keyword">:</span> <span class="token keyword">.</span>
+File Size                       <span class="token keyword">:</span> 24 KiB
+File Modification Date/Time     <span class="token keyword">:</span> 2024:09:27 13:07:22+01:00
+File Access Date/Time           <span class="token keyword">:</span> 2024:10:10 19:02:56+01:00
+File Inode Change Date/Time     <span class="token keyword">:</span> 2024:09:27 15:25:10+01:00
+File Permissions                <span class="token keyword">:</span> -rw-rw-r--
+File Type                       <span class="token keyword">:</span> JPEG
+File Type Extension             <span class="token keyword">:</span> jpg
+MIME Type                       <span class="token keyword">:</span> image/jpeg
+JFIF Version                    <span class="token keyword">:</span> 1.01
+Resolution Unit                 <span class="token keyword">:</span> inches
+X Resolution                    <span class="token keyword">:</span> 96
+Y Resolution                    <span class="token keyword">:</span> 96
+XMP Toolkit                     <span class="token keyword">:</span> Image::ExifTool 12.40
+Description                     <span class="token keyword">:</span> Intake24<span class="token punctuation">{</span>1Ru<span class="token variable">$h_B</span>\<span class="token operator">!</span>-N0-sT0p?<span class="token punctuation">}</span>
+Image Width                     <span class="token keyword">:</span> 680
+Image Height                    <span class="token keyword">:</span> 281
+Encoding Process                <span class="token keyword">:</span> Progressive DCT, Huffman coding
+Bits Per Sample                 <span class="token keyword">:</span> 8
+Color Components                <span class="token keyword">:</span> 3
+Y Cb Cr Sub Sampling            <span class="token keyword">:</span> YCbCr4:2:0 <span class="token punctuation">(</span>2 2<span class="token punctuation">)</span>
+Image Size                      <span class="token keyword">:</span> 680x281
+Megapixels                      <span class="token keyword">:</span> 0.191
+</code></pre>
+<h1 id="be-a-brute">Be a brute</h1>
+<p>Or we can simply use linux’s <code>strings</code> command to output all readable strings in a file:</p>
+<pre class=" language-bash"><code class="prism  language-bash">$ strings meta.jpg <span class="token operator">|</span> <span class="token function">grep</span> Intake
+    <span class="token operator">&lt;</span>rdf:li xml:lang<span class="token operator">=</span><span class="token string">'x-default'</span><span class="token operator">&gt;</span>Intake24<span class="token punctuation">{</span>1Ru<span class="token variable">$h_B</span>\<span class="token operator">!</span>-N0-sT0p?<span class="token punctuation">}</span><span class="token operator">&lt;</span>/rdf:li<span class="token operator">&gt;</span>
+</code></pre>
+<p>Flagged! :D</p>
+</div>
+</body>
+
+</html>

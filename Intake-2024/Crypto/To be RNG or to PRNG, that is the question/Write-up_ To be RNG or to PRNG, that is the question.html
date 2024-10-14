@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Write-up: To be RNG or to PRNG, that is the question</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h1 id="write-up-to-be-rng-or-to-prng-that-is-the-question">Write-up: To be RNG or to PRNG, that is the question</h1>
+<p>Yay, crypto :D</p>
+<p>Once we open the .zip file, we get two files:</p>
+<pre class=" language-bash"><code class="prism  language-bash">-rw-r--r-- 1 neowo neowo 1980 Sep 27 15:22 crypt.c
+-rw-rw-r-- 1 neowo neowo 42 Sep 27 15:19 flag.txt.encrypted
+</code></pre>
+<p>where <code>flag.txt.encrypted</code> is our flag, but encrypted using <code>crypt.c</code></p>
+<p>Next obvious step: we open <code>crypt.c</code> (how kind of the challenge creator to give us the source code), aaand its <em><strong>scary</strong></em>. Especially if you don’t know C.</p>
+<p>The title gives us a great hint: we’re playing with PRNG, aka Pseudo-Number generators.</p>
+<h1 id="quick-explanation-of-prng">Quick explanation of PRNG</h1>
+<p>How do they work? Pretty simple: We know that computers cannot generate “True” randomness. So instead, we use some smart algorithms that do the something close enough: “false” randomness. A bunch of equations that will, given an original state or “seed”, produce seemingly random values. Depending on the algorithm chosen, it can be rather hard to compute the seed from a small amount of random values. All the security resides in the secrecy and entropy of the seed. If we know the seed, we can use the same algorithm to get the exact same values every time; likewise, if the seed has low entropy (aka is chosen from predictable sources), we can find it.</p>
+<p>Most modern algorithms use <strong>CSPRNG</strong> (Cryptographically Secure (or Suitable) Pseudo-Random Number Generators". These algorithms not only use mathematical concepts making it very hard to compute the seed from the random values but also environments of high entropy to generate the seed. Those environments could be a combination of time, user mouse movements, CPU temperatures, weather data or even Cloudflare’s lava lamp wall. In conclusion, a good random number generator needs two elements:</p>
+<ul>
+<li>An environments of high entropy to generate the seed</li>
+<li>An algorithm that generates values such that reverse-engineering the seed from values is near-impossible</li>
+</ul>
+<h1 id="now-lets-analyse-crypt.c">Now let’s analyse <code>crypt.c</code></h1>
+<p>It can be hard to find at first glance what the flaw is. An experimented user, however, would instantly notice these lines of code:</p>
+<pre class=" language-c"><code class="prism  language-c"><span class="token keyword">int</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token keyword">int</span> argc<span class="token punctuation">,</span> <span class="token keyword">char</span> <span class="token operator">*</span><span class="token operator">*</span>argv<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">char</span> file_path<span class="token punctuation">[</span><span class="token number">128</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+  FILE <span class="token operator">*</span>input_file<span class="token punctuation">,</span> <span class="token operator">*</span>output_file<span class="token punctuation">;</span>
+
+  <span class="token function">SetSeed</span><span class="token punctuation">(</span><span class="token function">time</span><span class="token punctuation">(</span><span class="token constant">NULL</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p><code>SetSeed(time(NULL));</code> ? That’s very interesting. After a quick google search, we can realize that <code>time(NULL);</code> returns the current system’s time as a timestamp, whereas <code>SetSeed();</code> sets the seed. Remember what we said? If we can find the seed, we can use the same algorithm to generate the exact same values in the same order. So all we need, is to find the exact time the file was encrypted. But wait! Our system store’s that in the file’s metadata!</p>
+<pre class=" language-bash"><code class="prism  language-bash"><span class="token operator">&gt;&gt;</span><span class="token operator">&gt;</span> <span class="token function">stat</span> flag.txt.encrypted 
+  File: flag.txt.encrypted
+  Size: 42        	Blocks: 8          IO Block: 4096   regular <span class="token function">file</span>
+Device: 10302h/66306d	Inode: 22186554    Links: 1
+Access: <span class="token punctuation">(</span>0664/-rw-rw-r--<span class="token punctuation">)</span>  Uid: <span class="token punctuation">(</span> 1000/   neowo<span class="token punctuation">)</span>   Gid: <span class="token punctuation">(</span> 1000/   neowo<span class="token punctuation">)</span>
+Access: 2024-09-27 15:21:13.000000000 +0100
+Modify: 2024-09-27 15:19:48.000000000 +0100
+Change: 2024-10-02 17:34:25.545820435 +0100
+ Birth: 2024-10-02 17:34:25.545820435 +0100
+</code></pre>
+<p>But this isn’t timestamp format… Most people would use online tools to manually convert the date to timestamp, but we’re beyond that:</p>
+<pre class=" language-bash"><code class="prism  language-bash">$ <span class="token function">date</span> -d <span class="token string">"<span class="token variable"><span class="token variable">$(</span><span class="token function">stat</span> --printf<span class="token operator">=</span>%y flag.txt.encrypted <span class="token operator">|</span> <span class="token function">cut</span> -d. -f1<span class="token variable">)</span></span>"</span> +<span class="token string">"%s"</span>
+1727446788
+</code></pre>
+<p>Now we can modify <code>crypt.c</code> and add our seed: <code>1727446788</code>, compile then run:</p>
+<pre class=" language-bash"><code class="prism  language-bash">$ <span class="token function">sed</span> -n 64,68p crypt.c 
+int main<span class="token punctuation">(</span>int argc, char **argv<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  char file_path<span class="token punctuation">[</span>128<span class="token punctuation">]</span><span class="token punctuation">;</span>
+  FILE *input_file, *output_file<span class="token punctuation">;</span>
+
+  SetSeed<span class="token punctuation">(</span>1727446788<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  
+$ gcc crypt.c 
+
+$ ./a.out flag.txt.encrypted 
+Key used: 5aWHFANxfFtHwimgpceHzS5TOc21RYvw
+File flag.txt.encrypted.encrypted has been encrypted<span class="token operator">!</span>
+DONE.
+
+$ <span class="token function">cat</span> flag.txt.encrypted.encrypted 
+Intake24<span class="token punctuation">{</span>PrnG_1s_n0+_aS_SAFE_<span class="token operator">!</span>5_1T_sEEM5<span class="token punctuation">}</span>
+</code></pre>
+<p>Challenge solved :D</p>
+</div>
+</body>
+
+</html>

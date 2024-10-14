@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Write-up: Meow Meow Meow Meow</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h1 id="write-up-meow-meow-meow-meow">Write-up: Meow Meow Meow Meow</h1>
+<p>Now this one’s a bit tricky and might require some prior knowledge and intuition (or lots of googling).</p>
+<p>By keeping only the capital letter’s in the challenge’s description, we get “LSB”, an obvious hint as for the steganographic technique used.</p>
+<p>Time for some background!</p>
+<h1 id="what-in-the-tarnation-is-lsb">What in the tarnation is LSB?</h1>
+<p>You’re probably familiar with the fact that images are composed of pixels.<br>
+You probably also know that each of the pixels is a tuple of three values: (Red, Green, Blue)</p>
+<p>Furthermore, each of the values of each tuple of each pixel is a value in-between 0 and 255.<br>
+Why 255? Because it’s the values that can fit in 8 bits!<br>
+So, if we look at it in binary, each pixel is a tuple of three 8 bit values.</p>
+<p>Now’s the fun part:<br>
+We can hide binary data by picking one bit and writing linearly the data in that bit of each pixels (each column for each row in order).</p>
+<p>Obviously, changing the “Most Significant Bit” (aka the MSB, the bit equal to 2^7) will result in great changes in the image that will be easily noticeable by the human eye. Some drastic changes can even render part or the entirety of the image seemingly “corrupted”.</p>
+<p>So, we instead use the “Least Significant Bit” (aka LSB, the one equal to 2^0). Such a change will be so minimal that it will be invisible to the naked human eye.</p>
+<p><strong>In conclusion:</strong> A basic execution of an LSB algorithm</p>
+<pre><code># Encoding:
+- Let data be a string in binary encoding our data
+ - For each row
+	 - For each column
+		 - Take the red, green, blue values of current pixel
+		 - Convert those values to binary
+		 - Change the LSB of red to the ith bit of our data
+		 - Change the LSB of green to the i+1th bit of our data
+		 - Change the LSB of blue to the i+2th bit of our data
+	
+	
+# Decoding:
+- For each row
+	- For each column
+		- Take the red, green, blue values of current pixel
+		- Convert those values to binary
+		- Append the last bit of binary_red
+		- Append the last bit of binary_green
+		- Append the last bit of binary_red
+</code></pre>
+<h1 id="so-now-what-more-analysing-d">So now what? More analysing :D</h1>
+<p>Obviously, if you tried implementing that algorithm, you would get junk data. Fun is <strong>not</strong> allowed around me!!</p>
+<p>So we go back to analysing the file a bit more :D</p>
+<p>We try to print every triplet of LSB:</p>
+<pre class=" language-py"><code class="prism  language-py"><span class="token keyword">from</span> PIL <span class="token keyword">import</span> Image
+
+img <span class="token operator">=</span> Image<span class="token punctuation">.</span><span class="token builtin">open</span><span class="token punctuation">(</span><span class="token string">"cat.png"</span><span class="token punctuation">)</span>
+data <span class="token operator">=</span> img<span class="token punctuation">.</span>load<span class="token punctuation">(</span><span class="token punctuation">)</span>
+q <span class="token operator">=</span> <span class="token string">""</span><span class="token punctuation">.</span>join<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token string">" "</span><span class="token punctuation">.</span>join<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token string">"("</span><span class="token operator">+</span><span class="token builtin">str</span><span class="token punctuation">(</span><span class="token builtin">bin</span><span class="token punctuation">(</span>data<span class="token punctuation">[</span>i<span class="token punctuation">,</span>j<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token operator">+</span><span class="token string">" "</span><span class="token operator">+</span><span class="token builtin">str</span><span class="token punctuation">(</span><span class="token builtin">bin</span><span class="token punctuation">(</span>data<span class="token punctuation">[</span>i<span class="token punctuation">,</span>j<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token operator">+</span><span class="token string">" "</span><span class="token operator">+</span><span class="token builtin">str</span><span class="token punctuation">(</span><span class="token builtin">bin</span><span class="token punctuation">(</span>data<span class="token punctuation">[</span>i<span class="token punctuation">,</span>j<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token operator">+</span><span class="token string">")"</span> <span class="token keyword">for</span> j <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>img<span class="token punctuation">.</span>height<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>img<span class="token punctuation">.</span>width<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token punctuation">:</span><span class="token number">500</span><span class="token punctuation">]</span>
+</code></pre>
+<pre class=" language-bash"><code class="prism  language-bash">$ python3 lsb.py 
+<span class="token punctuation">(</span>0 0 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 0 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 1 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> 
+<span class="token punctuation">(</span>1 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 1 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 1 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> 
+<span class="token punctuation">(</span>0 1 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 1 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 0 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> 
+<span class="token punctuation">(</span>0 1 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 1 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 0 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> 
+<span class="token punctuation">(</span>0 0 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 0 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> 
+<span class="token punctuation">(</span>1 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 0 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 1 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 1 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> 
+<span class="token punctuation">(</span>0 1 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 0 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 1 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> 
+<span class="token punctuation">(</span>1 1 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 1<span class="token punctuation">)</span> <span class="token punctuation">(</span>0 0 0<span class="token punctuation">)</span> <span class="token punctuation">(</span>1 0
+</code></pre>
+<p>That’s weird… every other triplet is (0,0,0) ??<br>
+We can simply realise from there:</p>
+<ul>
+<li>Each 2n triplet is a valid LSB triplet</li>
+<li>Each 2n+1 is just junk data</li>
+</ul>
+<p>So we edit our script accordingly:</p>
+<pre class=" language-py"><code class="prism  language-py"><span class="token keyword">from</span> PIL <span class="token keyword">import</span> Image
+
+img <span class="token operator">=</span> Image<span class="token punctuation">.</span><span class="token builtin">open</span><span class="token punctuation">(</span><span class="token string">"cat.png"</span><span class="token punctuation">)</span>
+data <span class="token operator">=</span> img<span class="token punctuation">.</span>load<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">""</span><span class="token punctuation">.</span>join<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token string">""</span><span class="token punctuation">.</span>join<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token builtin">str</span><span class="token punctuation">(</span><span class="token builtin">bin</span><span class="token punctuation">(</span>data<span class="token punctuation">[</span>i<span class="token punctuation">,</span>j<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token operator">+</span><span class="token builtin">str</span><span class="token punctuation">(</span><span class="token builtin">bin</span><span class="token punctuation">(</span>data<span class="token punctuation">[</span>i<span class="token punctuation">,</span>j<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token operator">+</span><span class="token builtin">str</span><span class="token punctuation">(</span><span class="token builtin">bin</span><span class="token punctuation">(</span>data<span class="token punctuation">[</span>i<span class="token punctuation">,</span>j<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token keyword">for</span> j <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span>img<span class="token punctuation">.</span>height<span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>img<span class="token punctuation">.</span>width<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token punctuation">:</span><span class="token number">500</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class=" language-bash"><code class="prism  language-bash">$ python3 lsb.py 
+0011010000111000001110100101001101010111001101010011000001011001010101110111010
+0011011000100110101101010010100100011011101010100010000110101001001101001010110
+0000110000010001010111100001100010011011000101001001100110010101100100011101100
+1110111101001100100010001100011100101001001010011010110111001001010010001010100
+1001010101100011100001111000011000100110101100110101011100000101011001000011010
+0111000111001111111111111111111111111111111111111111111111111111111111111111111
+11111111111111111111111111
+</code></pre>
+<p>We can then use a cool online tool for decryption (keep this one noted somewhere, it’s really useful): <a href="https://kt.gy/">kt.gy</a></p>
+<p>After decryption of the binary bit (cut after 500 characters for simplicity of use):</p>
+<pre><code>48:SW50YWtlMjR7TCRiX0ExblRfVGgzdF9IMnJEIV8xbk5pVCN9ÿÿÿÿÿÿÿÿÿÿÿ
+</code></pre>
+<p>The <code>48:...</code> bit looks suspicious, as if someone was trying to give us a hint!<br>
+So, we copy the first 48 characters after the <code>48:</code>, and decode in b64:</p>
+<p><code>SW50YWtlMjR7TCRiX0ExblRfVGgzdF9IMnJEIV8xbk5pVCN9 -&gt; Intake24{L$b_A1nT_Th3t_H2rD!_1nNiT#}</code></p>
+<p>Flagged :D</p>
+</div>
+</body>
+
+</html>

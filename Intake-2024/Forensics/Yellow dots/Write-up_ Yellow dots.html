@@ -1,0 +1,52 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Write-up: Yellow dots</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h1 id="write-up-yellow-dots">Write-up: Yellow dots</h1>
+<p>Given a scan of a printed file, we are supposed to find data about the date, time and serial number of the printer.</p>
+<p>After a quick google search, we find this wikipedia article:<br>
+<a href="https://en.wikipedia.org/wiki/Printer_tracking_dots">Printer Tracking Dots</a></p>
+<p>In which you, most notably, find this image:<br>
+<img src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Machine_Identification_Code_von_Druckern.png" alt="Table of encoding of various data using yellow dots"></p>
+<p>Or, if you’re able to google beyond the first page, you might find this fantastic pdf:<br>
+<a href="https://www.eff.org/files/filenode/printers/ccc.pdf">Decoding Identifying Printer Information (Chaos Communication Camp Luftfahrtmuseum Finowfurt)</a></p>
+<p>Cool :D So now we just need to find the dots.</p>
+<h1 id="finding-those-damn-dots">Finding those damn dots</h1>
+<p>The second pdf already gives us a great solution, but let’s find some possible others.</p>
+<ol>
+<li>
+<p>Using stegsolve.jar<br>
+Stegsolve.jar is a steganography tool that allows you to scan different colour channels of a picture. Really useful. In our case,</p>
+<p>From there, we can see our lil’ dots in:</p>
+<ul>
+<li>Some blue planes<br>
+<img src="https://media.discordapp.net/attachments/1270664882865442816/1293999787594481776/image.png?ex=67096ab6&amp;is=67081936&amp;hm=f37b429034a57e2b35e83adce6bd5947ef629dbaf082b2b6395aa39e9bd55977&amp;=&amp;format=webp&amp;quality=lossless&amp;width=1085&amp;height=653" alt="enter image description here"></li>
+<li>Random colour map 2<br>
+<img src="https://media.discordapp.net/attachments/1270664882865442816/1293999844867969035/image.png?ex=67096ac4&amp;is=67081944&amp;hm=d7598f5a6f6e047f613c0566d6b65286297c664d0a38d54b7d0d3cf4fa78f935&amp;=&amp;format=webp&amp;quality=lossless&amp;width=1173&amp;height=653" alt="enter image description here"></li>
+</ul>
+</li>
+<li>
+<p>Using an online photo editing tool<br>
+My personal favourite is <a href="https://www.photopea.com/">photopea.com</a><br>
+Apply a <code>Hue and Saturation</code> layer, play with the settings a bit until you see what you want to see<br>
+<img src="https://media.discordapp.net/attachments/1270664882865442816/1294001391714439208/image.png?ex=67096c35&amp;is=67081ab5&amp;hm=53159fc9e751f639a91cda285968a2feeb9d58e1d2e38d22f1c93f41408967df&amp;=&amp;format=webp&amp;quality=lossless&amp;width=1439&amp;height=499" alt="enter image description here"></p>
+</li>
+<li>
+<p>Use a specialized steganography tool<br>
+I like <a href="https://29a.ch/photo-forensics/#forensic-magnifier">https://29a.ch/photo-forensics/#forensic-magnifier</a> personally, if you find anything better go for it.<br>
+<img src="https://media.discordapp.net/attachments/1270664882865442816/1294001928660844604/image.png?ex=67096cb5&amp;is=67081b35&amp;hm=e3df71a160f197072a68c5a5addeb2835fd6b8069de404b9fbca1aa3f46b79de&amp;=&amp;format=webp&amp;quality=lossless&amp;width=631&amp;height=653" alt="enter image description here"></p>
+</li>
+</ol>
+<h1 id="decryption">Decryption</h1>
+<p>Left as an exercice for the reader :) You’ve now got all the tools!</p>
+</div>
+</body>
+
+</html>

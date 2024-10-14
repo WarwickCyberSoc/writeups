@@ -1,0 +1,1 @@
+See [https://warwickcybersoc.github.io/writeups/Intake-2024/Forensics/Game's%20Meta/Write-up_%20Game's%20Meta.html](https://warwickcybersoc.github.io/writeups/Intake-2024/Forensics/Game's%20Meta/Write-up_%20Game's%20Meta.html)
